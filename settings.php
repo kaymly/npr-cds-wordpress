@@ -40,12 +40,15 @@ class NPR_CDS {
 		if ( ! post_type_exists( $post_type ) ) {
 			$post_type = 'post';
 		}
-		$required_capability = apply_filters( 'npr_cds_get_stories_capability', 'edit_posts' );
+
+		// Use the post type caps, it covers custom post types as well.
+		$required_capability_stories = $this->get_stories_capability( $post_type );
+		$required_capability_settings = $this->get_settings_capability( $post_type );
 
 		add_menu_page(
 			esc_html__( 'View Stories Uploaded to the CDS', 'npr-content-distribution-service' ),
 			esc_html__( 'NPR CDS', 'npr-content-distribution-service' ),
-			$required_capability,
+			$required_capability_stories,
 			'npr-cds-overview',
 			[ $this, 'view_uploads' ],
 			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
@@ -56,7 +59,7 @@ class NPR_CDS {
 			'npr-cds-overview',
 			'Get NPR Stories',
 			'Get NPR Stories',
-			$required_capability,
+			$required_capability_stories,
 			'get-npr-stories',
 			[ $this, 'get_stories' ]
 		);
@@ -64,7 +67,7 @@ class NPR_CDS {
 			'npr-cds-overview',
 			'NPR CDS Main Settings',
 			'Main Settings',
-			$required_capability,
+			$required_capability_settings,
 			'npr-cds-settings',
 			[ $this, 'general_settings' ]
 		);
@@ -72,7 +75,7 @@ class NPR_CDS {
 			'npr-cds-overview',
 			'NPR CDS Get Multi Settings',
 			'Get Multi Settings',
-			$required_capability,
+			$required_capability_settings,
 			'npr-cds-get-multi',
 			[ $this, 'get_multi' ]
 		);
@@ -80,7 +83,7 @@ class NPR_CDS {
 			'npr-cds-overview',
 			'NPR CDS Push Mapping',
 			'Push Mapping',
-			$required_capability,
+			$required_capability_settings,
 			'npr-cds-push-mapping',
 			[ $this, 'push_mapping' ]
 		);
@@ -88,7 +91,7 @@ class NPR_CDS {
 			'edit.php' . ( $post_type !== 'post' ? '?post_type=' . $post_type : '' ),
 			'Get NPR Stories',
 			'Get NPR Stories',
-			$required_capability,
+			$required_capability_stories,
 			'get-npr-stories',
 			[ $this, 'get_stories' ]
 		);
@@ -1518,6 +1521,30 @@ EOT;
 			default:
 		}
 	}
+
+	/**
+     * Get the required capability for story operations
+     *
+     * @param string $post_type The post type to check capabilities for
+     * @return string The required capability
+     */
+    public function get_stories_capability( string $post_type ): string {
+        // Use the post type caps, it covers custom post types as well.
+        $post_type_object = get_post_type_object( $post_type );
+        $required_capability = $post_type_object->cap->edit_posts;
+        return apply_filters( 'npr_cds_get_stories_capability', $required_capability, $post_type );
+    }
+
+    /**
+     * Get the required capability for settings pages
+     *
+     * @param string $post_type The post type context
+     * @return string The required capability
+     */
+    public function get_settings_capability( string $post_type ): string {
+        // Use manage options capability for settings pages.
+        return apply_filters( 'npr_cds_get_stories_capability_settings', 'manage_options', $post_type );
+    }
 }
 
 new NPR_CDS;
